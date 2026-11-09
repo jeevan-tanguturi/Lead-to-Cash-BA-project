@@ -1,0 +1,46 @@
+-- Lead-to-Cash data checks (fictional data)
+
+CREATE TABLE deals (
+  deal_id INTEGER,
+  client TEXT,
+  amount INTEGER,
+  status TEXT
+);
+
+CREATE TABLE invoices (
+  invoice_id INTEGER,
+  deal_id INTEGER,
+  amount INTEGER
+);
+
+INSERT INTO deals VALUES
+(1, 'Alpha Bank', 120000, 'Closed Won'),
+(2, 'City Travel', 80000, 'Closed Won'),
+(3, 'Delta Tech', 650000, 'Closed Won'),
+(4, 'Echo Media', 45000, 'Closed Won'),
+(5, 'Fox Retail', 30000, 'Open');
+
+INSERT INTO invoices VALUES
+(101, 1, 120000),
+(102, 2, 75000),
+(103, 3, 650000);
+
+-- Check 1: Won deals with no invoice (revenue leakage)
+SELECT d.deal_id, d.client, d.amount
+FROM deals d
+LEFT JOIN invoices i ON d.deal_id = i.deal_id
+WHERE d.status = 'Closed Won' AND i.invoice_id IS NULL;
+-- Result: Echo Media
+
+-- Check 2: Invoice amount does not match deal amount
+SELECT d.client, d.amount AS deal_amount, i.amount AS invoice_amount
+FROM deals d
+JOIN invoices i ON d.deal_id = i.deal_id
+WHERE d.amount <> i.amount;
+-- Result: City Travel (80,000 vs 75,000)
+
+-- Check 3: Deals over 500k needing second approval (CR1)
+SELECT client, amount
+FROM deals
+WHERE amount > 500000;
+-- Result: Delta Tech
